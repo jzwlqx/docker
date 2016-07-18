@@ -10,25 +10,26 @@ override_dh_gencontrol:
 	dh_gencontrol
 
 override_dh_auto_build:
-	./hack/make.sh dynbinary
+	#./hack/make.sh binary
+	echo hello
 	# ./man/md2man-all.sh runs outside the build container (if at all), since we don't have go-md2man here
 
 override_dh_auto_test:
-	./bundles/$(VERSION)/dynbinary-daemon/dockerd -v
-	./bundles/$(VERSION)/dynbinary-client/docker -v
+	./bundles/$(VERSION)/binary-daemon/dockerd -v
+	./bundles/$(VERSION)/binary-client/docker -v
 
 override_dh_strip:
 	# Go has lots of problems with stripping, so just don't
 
 override_dh_auto_install:
 	mkdir -p debian/docker-engine/usr/bin
-	cp -aT "$$(readlink -f bundles/$(VERSION)/dynbinary-client/docker)" debian/docker-engine/usr/bin/docker
-	cp -aT "$$(readlink -f bundles/$(VERSION)/dynbinary-daemon/dockerd)" debian/docker-engine/usr/bin/dockerd
-	cp -aT "$$(readlink -f bundles/$(VERSION)/dynbinary-daemon/docker-proxy)" debian/docker-engine/usr/bin/docker-proxy
-	cp -aT /usr/local/bin/containerd debian/docker-engine/usr/bin/docker-containerd
-	cp -aT /usr/local/bin/containerd-shim debian/docker-engine/usr/bin/docker-containerd-shim
-	cp -aT /usr/local/bin/ctr debian/docker-engine/usr/bin/docker-containerd-ctr
-	cp -aT /usr/local/sbin/runc debian/docker-engine/usr/bin/docker-runc
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-client/docker)" debian/docker-engine/usr/bin/docker
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/dockerd)" debian/docker-engine/usr/bin/dockerd
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/docker-runc)" debian/docker-engine/usr/bin/docker-runc
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/docker-proxy)" debian/docker-engine/usr/bin/docker-proxy
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/docker-containerd)" debian/docker-engine/usr/bin/docker-containerd
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/docker-containerd-shim)" debian/docker-engine/usr/bin/docker-containerd-shim
+	cp -aT "$$(readlink -f bundles/$(VERSION)/binary-daemon/docker-containerd-ctr)" debian/docker-engine/usr/bin/docker-containerd-ctr
 	mkdir -p debian/docker-engine/usr/lib/docker
 
 override_dh_installinit:

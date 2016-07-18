@@ -68,6 +68,8 @@ set -e
 		fi
 	done < CHANGELOG.md
 
+	cp -r bundles bundles2
+
 	builderDir="contrib/builder/rpm/${PACKAGE_ARCH}"
 	pkgs=( $(find "${builderDir}/"*/ -type d) )
 	if [ ! -z "$DOCKER_BUILD_PKGS" ]; then
@@ -90,6 +92,7 @@ set -e
 		cat > "$DEST/$version/Dockerfile.build" <<-EOF
 			FROM $image
 			COPY . /usr/src/${rpmName}
+			RUN rm -rf /usr/src/${rpmName}/bundles && mv /usr/src/${rpmName}/bundles2 /usr/src/${rpmName}/bundles
 			RUN mkdir -p /go/src/github.com/docker && mkdir -p /go/src/github.com/opencontainers
 		EOF
 
@@ -97,20 +100,6 @@ set -e
 		awk '$1 == "ENV" && $2 == "RUNC_COMMIT" { print; exit }' Dockerfile >> "$DEST/$version/Dockerfile.build"
 		awk '$1 == "ENV" && $2 == "CONTAINERD_COMMIT" { print; exit }' Dockerfile >> "$DEST/$version/Dockerfile.build"
 
-		# add runc and containerd compile and install
-		cat >> "$DEST/$version/Dockerfile.build" <<-EOF
-			# Install runc
-			RUN git clone https://github.com/opencontainers/runc.git "/go/src/github.com/opencontainers/runc" \
-					&& cd "/go/src/github.com/opencontainers/runc" \
-					&& git checkout -q "\$RUNC_COMMIT"
-			RUN set -x && export GOPATH="/go" && cd "/go/src/github.com/opencontainers/runc" \
-					&& make BUILDTAGS="\$RUNC_BUILDTAGS" && make install
-			# Install containerd
-			RUN git clone https://github.com/docker/containerd.git "/go/src/github.com/docker/containerd" \
-					&& cd "/go/src/github.com/docker/containerd" \
-					&& git checkout -q "\$CONTAINERD_COMMIT"
-			RUN set -x && export GOPATH="/go" && cd "/go/src/github.com/docker/containerd" && make && make install
-		EOF
 		if [ "$DOCKER_EXPERIMENTAL" ]; then
 			echo 'ENV DOCKER_EXPERIMENTAL 1' >> "$DEST/$version/Dockerfile.build"
 		fi
@@ -121,8 +110,6 @@ set -e
 			RUN ln -sfv /usr/src/${rpmName}/hack/make/.build-rpm SPECS
 			WORKDIR /root/rpmbuild/SPECS
 			RUN tar --exclude .git -r -C /usr/src -f /root/rpmbuild/SOURCES/${rpmName}.tar ${rpmName}
-			RUN tar --exclude .git -r -C /go/src/github.com/docker -f /root/rpmbuild/SOURCES/${rpmName}.tar containerd
-			RUN tar --exclude .git -r -C /go/src/github.com/opencontainers -f /root/rpmbuild/SOURCES/${rpmName}.tar runc
 			RUN gzip /root/rpmbuild/SOURCES/${rpmName}.tar
 			RUN { cat /usr/src/${rpmName}/contrib/builder/rpm/${PACKAGE_ARCH}/changelog; } >> ${rpmName}.spec && tail >&2 ${rpmName}.spec
 			RUN rpmbuild -ba \

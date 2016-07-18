@@ -91,7 +91,7 @@ tgz: build ## build the archives (.zip on windows and .tgz\notherwise) containin
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross tgz
 
 deb: build  ## build the deb packages
-	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary build-deb
+	$(DOCKER_RUN_DOCKER) hack/make.sh binary build-deb
 
 docs: ## build the docs
 	$(MAKE) -C docs docs
@@ -103,7 +103,7 @@ install: ## install the linux binaries
 	KEEPBUNDLE=1 hack/make.sh install-binary
 
 rpm: build ## build the rpm packages
-	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary build-rpm
+	$(DOCKER_RUN_DOCKER) hack/make.sh binary build-rpm
 
 run: build ## run the docker daemon in a container
 	$(DOCKER_RUN_DOCKER) sh -c "KEEPBUNDLE=1 hack/make.sh install-binary run"
