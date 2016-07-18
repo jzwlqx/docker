@@ -36,24 +36,24 @@ Requires(preun): initscripts
 %endif
 
 # required packages on install
-Requires: /bin/sh
-Requires: iptables
-%if !0%{?suse_version}
-Requires: libcgroup
-%else
-Requires: libcgroup1
-%endif
-Requires: tar
-Requires: xz
-%if 0%{?fedora} >= 21 || 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?oraclelinux} >= 7
-# Resolves: rhbz#1165615
-Requires: device-mapper-libs >= 1.02.90-1
-%endif
-%if 0%{?oraclelinux} >= 6
-# Require Oracle Unbreakable Enterprise Kernel R4 and newer device-mapper
-Requires: kernel-uek >= 4.1
-Requires: device-mapper >= 1.02.90-2
-%endif
+#Requires: /bin/sh
+#Requires: iptables
+#%if !0%{?suse_version}
+#Requires: libcgroup
+#%else
+#Requires: libcgroup1
+#%endif
+#Requires: tar
+#Requires: xz
+#%if 0%{?fedora} >= 21 || 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?oraclelinux} >= 7
+## Resolves: rhbz#1165615
+#Requires: device-mapper-libs >= 1.02.90-1
+#%endif
+#%if 0%{?oraclelinux} >= 6
+## Require Oracle Unbreakable Enterprise Kernel R4 and newer device-mapper
+#Requires: kernel-uek >= 4.1
+#Requires: device-mapper >= 1.02.90-2
+#%endif
 
 # docker-selinux conditional
 %if 0%{?fedora} >= 20 || 0%{?centos} >= 7 || 0%{?rhel} >= 7 || 0%{?oraclelinux} >= 7
@@ -82,6 +82,11 @@ Requires: device-mapper >= 1.02.90-2
 %global selinux_policyver 3.13.1-23
 %endif # centos,oraclelinux 7
 %endif # with_selinux
+
+
+%define __debug_install_post   \
+   %{_rpmconfigdir}/find-debuginfo.sh %{?_find_debuginfo_opts} "%{_builddir}/%{?buildsubdir}"\
+%{nil}
 
 # RE: rhbz#1195804 - ensure min NVR for selinux-policy
 %if 0%{?with_selinux}
@@ -114,27 +119,26 @@ depending on a particular stack or provider.
 
 %build
 export DOCKER_GITCOMMIT=%{_gitcommit}
-./hack/make.sh dynbinary
 # ./man/md2man-all.sh runs outside the build container (if at all), since we don't have go-md2man here
 
 %check
-./bundles/%{_origversion}/dynbinary-client/docker -v
-./bundles/%{_origversion}/dynbinary-daemon/dockerd -v
+./bundles/%{_origversion}/binary-client/docker -v
+./bundles/%{_origversion}/binary-daemon/dockerd -v
 
 %install
 # install binary
 install -d $RPM_BUILD_ROOT/%{_bindir}
-install -p -m 755 bundles/%{_origversion}/dynbinary-client/docker-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/docker
-install -p -m 755 bundles/%{_origversion}/dynbinary-daemon/dockerd-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/dockerd
-install -p -m 755 bundles/%{_origversion}/dynbinary-daemon/docker-proxy-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/docker-proxy
+install -p -m 755 bundles/%{_origversion}/binary-client/docker-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/docker
+install -p -m 755 bundles/%{_origversion}/binary-daemon/dockerd-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/dockerd
+install -p -m 755 bundles/%{_origversion}/binary-daemon/docker-proxy-%{_origversion} $RPM_BUILD_ROOT/%{_bindir}/docker-proxy
 
 # install containerd
-install -p -m 755 /usr/local/bin/containerd $RPM_BUILD_ROOT/%{_bindir}/docker-containerd
-install -p -m 755 /usr/local/bin/containerd-shim $RPM_BUILD_ROOT/%{_bindir}/docker-containerd-shim
-install -p -m 755 /usr/local/bin/ctr $RPM_BUILD_ROOT/%{_bindir}/docker-containerd-ctr
+install -p -m 755 bundles/%{_origversion}/binary-daemon/docker-containerd $RPM_BUILD_ROOT/%{_bindir}/docker-containerd
+install -p -m 755 bundles/%{_origversion}/binary-daemon/docker-containerd-shim $RPM_BUILD_ROOT/%{_bindir}/docker-containerd-shim
+install -p -m 755 bundles/%{_origversion}/binary-daemon/docker-containerd-ctr $RPM_BUILD_ROOT/%{_bindir}/docker-containerd-ctr
 
 # install runc
-install -p -m 755 /usr/local/sbin/runc $RPM_BUILD_ROOT/%{_bindir}/docker-runc
+install -p -m 755 bundles/%{_origversion}/binary-daemon/docker-runc $RPM_BUILD_ROOT/%{_bindir}/docker-runc
 
 # install udev rules
 install -d $RPM_BUILD_ROOT/%{_sysconfdir}/udev/rules.d
@@ -240,5 +244,6 @@ if [ "$1" -ge "1" ] ; then
     /sbin/service docker condrestart >/dev/null 2>&1 || :
 fi
 %endif
+
 
 %changelog
